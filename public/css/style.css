@@ -1,0 +1,203 @@
+/* ==========================================
+   STELLARQUERY STUDIO - MANUAL CSS
+   ================ ========================== */
+:root {
+    --bg-base: #f8fafc;
+    --bg-surface: #ffffff;
+    --bg-subtle: #f1f5f9;
+    --border-color: #cbd5e1;
+    --border-dark: #334155;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --accent: #0284c7;
+    --accent-hover: #0369a1;
+    --danger: #dc2626;
+    --success: #16a34a;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* --- TOP NAVBAR --- */
+.sq-navbar {
+    background-color: #0f172a;
+    color: #ffffff;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid #1e293b;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.sq-brand {
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    color: #f8fafc;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sq-nav-items {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* --- BUTTONS & INPUTS (CRISP & SHARP) --- */
+.sq-btn {
+    background: #1e293b;
+    color: #f8fafc;
+    border: 1px solid #334155;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sq-btn:hover {
+    background: #334155;
+    border-color: #475569;
+}
+
+.sq-btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+}
+.sq-btn-primary:hover {
+    background: var(--accent-hover);
+}
+
+.sq-btn-danger {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: #fff;
+}
+
+.sq-input, .sq-select, .sq-textarea {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 6px 10px;
+    font-size: 13px;
+    border-radius: 4px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sq-input:focus, .sq-select:focus, .sq-textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+/* --- CARDS & PANELS --- */
+.sq-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+}
+
+.sq-card-interactive {
+    cursor: pointer;
+    transition: transform 0.1s, border-color 0.15s;
+}
+.sq-card-interactive:hover {
+    border-color: var(--accent);
+    background: #fcfdfe;
+}
+
+/* --- DATA TABLE (HIGH DENSITY) --- */
+.sq-table-wrapper {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow-x: auto;
+    max-height: 62vh;
+}
+
+.sq-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 12.5px;
+}
+
+.sq-table th {
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.sq-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    white-space: nowrap;
+    color: #1e293b;
+}
+
+.sq-table tr:hover td {
+    background-color: #f8fafc;
+}
+
+/* Editable Cell */
+td[contenteditable="true"] {
+    outline: none;
+}
+td[contenteditable="true"]:hover {
+    background-color: #f1f5f9;
+    box-shadow: inset 0 0 0 1px var(--border-color);
+}
+td[contenteditable="true"]:focus {
+    background-color: #ffffff !important;
+    box-shadow: inset 0 0 0 2px var(--accent) !important;
+}
+
+/* --- UTILS --- */
+.sq-flex { display: flex; align-items: center; }
+.sq-flex-between { justify-content: space-between; }
+.sq-gap-2 { gap: 8px; }
+.sq-gap-4 { gap: 16px; }
+.sq-margin-bottom { margin-bottom: 12px; }
+.sq-hidden { display: none !important; }
+
+/* Loader */
+#global-loader {
+    position: fixed; inset: 0; background: rgba(255,255,255,0.8);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.2s, visibility 0.2s;
+}
+#global-loader.hide-loader { opacity: 0; visibility: hidden; pointer-events: none; }
