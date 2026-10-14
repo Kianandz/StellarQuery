@@ -104,8 +104,15 @@
         </div>
 
         <!-- PAGINATION -->
-        <div class="sq-card sq-flex sq-flex-between" style="padding: 8px 12px; margin-top: 8px; background: #fff;">
-            <div id="pagination-info" style="color: var(--text-muted); font-size: 12px;">Showing...</div>
+        <div class="sq-card sq-flex sq-flex-between" style="padding: 8px 12px; margin-top: 8px; background: #fff; align-items: center;">
+            <div class="sq-flex sq-gap-2" style="align-items: center;">
+                <div id="pagination-info" style="color: var(--text-muted); font-size: 12px;">Showing...</div>
+                <select id="limit-data" class="sq-select" style="height: 26px; font-size: 11px; padding: 0 4px; margin-left: 8px;" onchange="changeLimit(this.value)">
+                    <option value="25" selected>25 rows</option>
+                    <option value="50">50 rows</option>
+                    <option value="100">100 rows</option>
+                </select>
+            </div>
             <div class="sq-flex sq-gap-2">
                 <button id="btn-prev" onclick="changePage(-1)" class="sq-btn">Prev</button>
                 <span id="page-indicator" class="sq-btn" style="background: #f8fafc; color: var(--text-muted); cursor: default;">Page 1</span>

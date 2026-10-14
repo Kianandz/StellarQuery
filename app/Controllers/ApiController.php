@@ -18,6 +18,8 @@ class ApiController {
 
         ob_start();
         try {
+            set_time_limit(0); 
+            ini_set('memory_limit', '-1');
             $pdo = null;
             $action = $_GET['action'] ?? $_POST['action'];
             
@@ -182,10 +184,33 @@ class ApiController {
 
             if ($action === 'data') {
                 $columns =$pdo->query("SHOW COLUMNS FROM `$table`")->fetchAll(PDO::FETCH_COLUMN);
-                if (empty($columns)) { ob_clean(); echo json_encode(['columns' => [], 'data' => [], 'pk' => null]); exit; }
+                if (empty($columns)) { ob_clean(); echo json_encode(['columns' => [], 'data' => [], 'pk' => null, 'total' => 0]); exit; }
                 $pk =$pdo->query("SHOW INDEX FROM `$table` WHERE Key_name = 'PRIMARY'")->fetchColumn(4) ?: null;
-                $data =$pdo->query("SELECT * FROM `$table`")->fetchAll();
-                ob_clean(); echo json_encode(['columns' => $columns, 'data' => $data, 'pk' =>$pk]); exit;
+
+                $page = max(1, intval($_GET['page'] ?? 1));$limit = max(1, intval($_GET['limit'] ?? 25));$offset = ($page - 1) *$limit;
+                $search = trim($_GET['search'] ?? '');
+
+                $whereSql = "";
+                $params = [];
+
+                if ($search !== '') {$likes = [];
+                    foreach ($columns as $col) {$likes[] = "`$col` LIKE ?";
+                        $params[] = "%$search%";
+                    }
+                    $whereSql = "WHERE " . implode(" OR ", $likes);
+                }
+
+                $stmtTotal =$pdo->prepare("SELECT COUNT(*) FROM `$table` $whereSql");
+                $stmtTotal->execute($params);
+                $total =$stmtTotal->fetchColumn();
+
+                $stmtData =$pdo->prepare("SELECT * FROM `$table` $whereSql LIMIT $limit OFFSET $offset");
+                $stmtData->execute($params);
+                $data =$stmtData->fetchAll();
+
+                ob_clean(); 
+                echo json_encode(['columns' => $columns, 'data' =>$data, 'pk' => $pk, 'total' =>$total]); 
+                exit;
             }
 
             // FAKER GENERATOR

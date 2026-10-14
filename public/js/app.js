@@ -1,4 +1,4 @@
-let state = { view: 'databases', db: '', table: '', pk: '', page: 1, limit: 50, totalPages: 1, dbList: [], tableList: [], rawColumns: [], rawData: [], filteredData: [], tab: 'data', isDataLoaded: false };
+let state = { view: 'databases', db: '', table: '', pk: '', page: 1, limit: 25, totalPages: 1, dbList: [], tableList: [], rawColumns: [], rawData: [], filteredData: [], tab: 'data', isDataLoaded: false };
 
 const DOM = {
     vDb: document.getElementById('view-databases'), vTable: document.getElementById('view-tables'), vData: document.getElementById('view-data'),
@@ -90,16 +90,33 @@ function renderTables(tables) {
     `).join('');
 }
 
-async function loadData(db, table) {
-    state.db = db; state.table = table; state.page = 1; DOM.searchData.value = '';
-    state.isDataLoaded = false; document.getElementById('bulk-action-box').classList.add('sq-hidden');
+async function loadData(db, table, page = 1) {
+    state.db = db; state.table = table; state.page = page;
+    state.isDataLoaded = false; 
+    document.getElementById('bulk-action-box').classList.add('sq-hidden');
+    
     if(state.tab === 'structure') { await loadStructure(); showView('data'); return; }
+    
     showLoader(`Menarik data dari ${table}...`);
     try {
-        const json = await safeFetchJson(`?action=data&db=${db}&table=${table}`);
-        state.pk = json.pk; state.rawColumns = json.columns || []; state.rawData = json.data || [];
-        state.isDataLoaded = true; showView('data'); applyFilterAndPaginate();
-    } catch (err) { DOM.dataHead.innerHTML = ''; DOM.dataBody.innerHTML = `<tr><td style="color:var(--danger); text-align:center; padding:20px;">Error: ${err.message}</td></tr>`; showView('data'); } finally { hideLoader(); }
+        const searchVal = document.getElementById('search-data').value.trim();
+        const json = await safeFetchJson(`?action=data&db=${db}&table=${table}&page=${state.page}&limit=${state.limit}&search=${encodeURIComponent(searchVal)}`);
+        
+        state.pk = json.pk; 
+        state.rawColumns = json.columns || []; 
+        state.rawData = json.data || [];
+        state.totalRecords = json.total || 0; 
+        
+        state.isDataLoaded = true; 
+        showView('data'); 
+        applyFilterAndPaginate();
+    } catch (err) { 
+        DOM.dataHead.innerHTML = ''; 
+        DOM.dataBody.innerHTML = `<tr><td style="color:var(--danger); text-align:center; padding:20px;">Error: ${err.message}</td></tr>`; 
+        showView('data'); 
+    } finally { 
+        hideLoader(); 
+    }
 }
 
 function toggleInlineQuery() {
@@ -191,26 +208,31 @@ async function jumpToRelated(prefix, idVal) {
 }
 
 function applyFilterAndPaginate() {
-    const term = DOM.searchData.value.toLowerCase().trim();
-    state.filteredData = !term ? state.rawData : state.rawData.filter(row => Object.values(row).some(val => val !== null && val.toString().toLowerCase().includes(term)));
-    state.totalPages = Math.max(1, Math.ceil(state.filteredData.length / state.limit));
-    if (state.page > state.totalPages) state.page = 1;
-    const start = (state.page - 1) * state.limit; const pageData = state.filteredData.slice(start, start + state.limit);
-    renderData(state.rawColumns, pageData);
+    state.totalPages = Math.max(1, Math.ceil(state.totalRecords / state.limit));
+    renderData(state.rawColumns, state.rawData);
+    
     document.getElementById('page-indicator').innerText = `Page ${state.page} / ${state.totalPages}`;
-    document.getElementById('pagination-info').innerText = `Total: ${state.filteredData.length} records`;
+    document.getElementById('pagination-info').innerText = `Total: ${state.totalRecords} records`;
 }
 
 function renderData(columns, data) {
     let chkHtml = state.pk ? `<th style="width: 30px; text-align:center;"><input type="checkbox" onchange="toggleAllCheck(this)"></th>` : '';
     let headHtml = columns.map(col => `<th>${col}</th>`).join('');
-    DOM.dataHead.innerHTML = `<tr>${chkHtml}${headHtml}<th style="text-align:center;">Aksi</th></tr>`;
+
+    DOM.dataHead.innerHTML = `<tr>${chkHtml}<th style="width: 40px; text-align:center;">No</th>${headHtml}<th style="text-align:center;">Aksi</th></tr>`;
     
-    if (data.length === 0) { DOM.dataBody.innerHTML = `<tr><td colspan="${columns.length+(state.pk?2:1)}" style="text-align:center; color:var(--text-muted); padding:30px;">No records found.</td></tr>`; return; }
+    if (data.length === 0) { 
+        DOM.dataBody.innerHTML = `<tr><td colspan="${columns.length+(state.pk?3:2)}" style="text-align:center; color:var(--text-muted); padding:30px;">No records found.</td></tr>`; 
+        return; 
+    }
     
-    DOM.dataBody.innerHTML = data.map(row => {
+    DOM.dataBody.innerHTML = data.map((row, index) => {
+        let rowNum = (state.page - 1) * state.limit + index + 1;
+
         const pkVal = state.pk ? row[state.pk] : '';
         const tdChk = state.pk ? `<td style="text-align:center;"><input type="checkbox" class="row-chk" value="${escapeHTML(pkVal)}" onchange="updateBulkUI()"></td>` : '';
+        
+        const tdNo = `<td style="text-align:center; color:var(--text-muted); font-size:12px; pointer-events:none;">${rowNum}</td>`;
         
         const tds = columns.map(col => {
             let valRaw = row[col]; let isFk = col.endsWith('_id') && valRaw !== null && valRaw !== '';
@@ -219,8 +241,10 @@ function renderData(columns, data) {
             return `<td tabindex="0" contenteditable="true" data-col="${col}" onfocus="storeOriginal(this)" onblur="updateField(this)">${inner}</td>`;
         }).join('');
         const act = state.pk ? `<button onclick="deleteData('${pkVal}')" class="sq-btn sq-btn-danger" style="padding: 2px 6px; font-size:11px;">Del</button>` : '';
-        return `<tr data-pk-val="${escapeHTML(pkVal)}">${tdChk}${tds}<td style="text-align:center;">${act}</td></tr>`;
+        
+        return `<tr data-pk-val="${escapeHTML(pkVal)}">${tdChk}${tdNo}${tds}<td style="text-align:center;">${act}</td></tr>`;
     }).join('');
+    
     updateBulkUI();
 }
 
@@ -469,7 +493,12 @@ async function runRawSql() {
 DOM.searchData.addEventListener('input', () => { state.page = 1; applyFilterAndPaginate(); });
 document.getElementById('search-db').addEventListener('input', e => renderDatabases(state.dbList.filter(db => db.toLowerCase().includes(e.target.value.toLowerCase()))));
 document.getElementById('search-table').addEventListener('input', e => renderTables(state.tableList.filter(tbl => tbl.toLowerCase().includes(e.target.value.toLowerCase()))));
-function changePage(d) { let n = state.page + d; if (n >= 1 && n <= state.totalPages) { state.page = n; applyFilterAndPaginate(); } }
+function changePage(d) { 
+    let n = state.page + d; 
+    if (n >= 1 && n <= state.totalPages) { 
+        loadData(state.db, state.table, n); 
+    } 
+}
 
 if (!document.getElementById('global-loader').classList.contains('hide-loader')) hideLoader();
 const inlineSqlInput = document.getElementById('inline-sql-input');
@@ -496,14 +525,28 @@ if (searchTableEl) {
 function changePage(d) { 
     let n = state.page + d; 
     if (n >= 1 && n <= state.totalPages) { 
-        state.page = n; 
-        applyFilterAndPaginate(); 
+        loadData(state.db, state.table, n); 
     } 
+}
+
+function changeLimit(newLimit) {
+    state.limit = parseInt(newLimit);
+    state.page = 1;
+    loadData(state.db, state.table, state.page);
 }
 
 const globalLoader = document.getElementById('global-loader');
 if (globalLoader && !globalLoader.classList.contains('hide-loader')) {
     hideLoader();
 }
+
+
+let searchTimeout;
+DOM.searchData.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        loadData(state.db, state.table, 1);
+    }, 500);
+});
 
 restoreState();
